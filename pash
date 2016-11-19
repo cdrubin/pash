@@ -4,9 +4,9 @@
 local pash = {}
 
 
-local templet = require( 'templet' )
-local inspect = require( 'inspect' )
-local lfs = require( 'lfs' )
+templet = require( 'templet' )
+inspect = require( 'inspect' )
+lfs = require( 'lfs' )
 
 
 -- table deep-copy utility function
@@ -29,8 +29,11 @@ end
 
 function pash.run_code( code, context, name )
 
+  -- copy context into _G for the purposes of execution
+  for k,v in pairs( context ) do _G[k] = v end
+
   -- check syntax and return a function
-  local func, err = load( code, name, 't', context )
+  local func, err = load( code, name, 't', _G )
 
   if err then
     error( err )
@@ -40,6 +43,10 @@ function pash.run_code( code, context, name )
     if ( result == false ) then
       error( returned )
     else
+      -- copy back special keys in case there have been any changes
+      context.page = _G.page
+      context.site = _G.site
+      context.pash = _G.pash
       return returned, context
     end
   end
@@ -68,12 +75,15 @@ end
 
 
 function pash.render_file( filename, env )
-  local function include( filename )
+  function include( filename )
     local template = templet.loadfile( filename )
     return template( env )
   end
-  env.include = include
-  env.inspect = inspect
+  
+  -- copy env into _G for the purposes of execution
+  for k,v in pairs( env ) do _G[k] = v end
+  env = _G
+  
   return include( filename )
 end
 
@@ -211,11 +221,12 @@ else
     -- stand-in for the tree for the first pass of render (as the tree is generated in this initial pass)
     pash.context.site = { tree = {} }
     pash.context.page = {}
+    pash.context.pash = {}
     local site_tree = pash.render_tree( '.', pash.destination, 0, pash.copy( pash.context ), true )
 
     pash.context.site = { tree = site_tree }
     pash.context.page = {}
-    
+    pash.context.pash = {}    
     pash.render_tree( '.', pash.destination, 0, pash.context )
   end
 end
