@@ -1,25 +1,30 @@
 pash
 ====
 
-pash is a text processor that allows lua to be executed in 
+*pash* is a text processor that allows lua to be executed in 
 the context of page generation. Developed as a static website 
-generator that uses lua-templet for templating.
+generator that uses [templet](https://colberg.org/lua-templet) for templating.
 
-pash adds the execution of `_context.pash` to the environment 
-when processing the contents of a directory.
+*pash* adds execution of `_context.pash` to the environment 
+when processing the contents of a directory (and child directories inherit
+the environment of their parents).
 
 Files and directories that begin with `_` or `.` are ignored.
 
 She understands two kinds of tags inside source files :
 
-1. Code
+Code
+----
+Starting a line with the **|** character indicates that what follows is lua code
 ``` lua
 | for i = 1,5 do
   <br />
 | end
 ```
   
-2. Value
+Value
+-----
+When the **${...}** is encountered in a source file the results of the code within elipses is inserted into the source 
 ``` lua
 | for i = 1,5 do %]
   <li>Item ${ i }</li>
@@ -32,7 +37,7 @@ There is one built-in function provided:
   ${ include( '_snippet/menu.html' ) }
 ```
       
-She could certainly process any filetype but we usually have her
+*pash* could certainly process any filetype but we usually have her
 chew on HTML, CSS and JS template files.
       
 A common need when using pash as a static site generator
