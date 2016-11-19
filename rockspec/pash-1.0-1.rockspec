@@ -1,9 +1,9 @@
 package = "pash"
-version = "1.0"
+version = "1.0-1"
 
 source = {
-   url = "git://github.com/cdrubin/pash"
-   tag = "1.0"
+   url = "git://github.com/cdrubin/pash",
+   tag = "1.0-1"
 }
 
 description = {
