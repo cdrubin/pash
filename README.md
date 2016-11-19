@@ -107,7 +107,7 @@ Pashlicks loves her sisters Josie and Marmite
 
 ```
 
-Every page has some *special* variables injected into its environment:
+Every page has some *special* variables availabe in its environment:
 
 ```lua
 page.file      -- filename of file being processed
@@ -116,6 +116,8 @@ page.path      -- path to file from root of site
 page.level     -- level in the tree at which this page sits
 
 site.tree      -- tree of site
+
+pash           -- a lua table available for user data and functions
 ```
                 
 Calling pash should be as simple as :
