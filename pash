@@ -188,7 +188,7 @@ pash.destination = arg[2] or nil
 
 
 if ( #arg ~= 2 ) then
-  print( 'Usage: lua '..arg[0]..' <source> <destination>' )
+  print( 'Usage: pash <source> <destination>' )
 else
   local source_attr = lfs.attributes( pash.source )
   local destination_attr = lfs.attributes( pash.destination )
