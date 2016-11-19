@@ -33,12 +33,12 @@ function pash.run_code( code, context, name )
   local func, err = load( code, name, 't', context )
 
   if err then
-    error( code, err )
+    error( err )
   else
     -- execute with protection and catch errors
     local result, returned = pcall( func )
     if ( result == false ) then
-      error( code, returned )
+      error( returned )
     else
       return returned, context
     end
