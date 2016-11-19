@@ -21,12 +21,10 @@ dependencies = {
 }
   
 build = {
-  type = "make"
-  install_variables = {
-    PREFIX = "$(PREFIX)",
-    LUADIR = "$(LUADIR)",
-    DOCDIR = "$(PREFIX)/doc",
-  },
-  copy_directories = {
+  type = "none",
+  install = { 
+    bin = {
+      "pash"
+    }
   }
 }
