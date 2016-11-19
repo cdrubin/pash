@@ -73,6 +73,7 @@ function pash.render_file( filename, env )
     return template( env )
   end
   env.include = include
+  env.inspect = inspect
   return include( filename )
 end
 
