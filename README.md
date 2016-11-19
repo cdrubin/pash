@@ -116,5 +116,5 @@ site.tree      -- tree of site
 Calling pash should be as simple as :
 
 ```bash
-pash (src) (dest)
+pash <src> <dest>
 ```
