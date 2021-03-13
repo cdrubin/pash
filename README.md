@@ -123,12 +123,14 @@ pash           -- a lua table available for user data and functions
 Calling pash should be as simple as :
 
 ```bash
-pash <src> <dest>
+./pash.script <src> <dest>
 ```
 
-or use the APE binary distribution:
+or use the [APE](https://justine.lol/ape.html) binary distribution thanks to [cosmopolitan libc](https://justine.lol/cosmopolitan/index.html):
 
+```
 ./pash.com
+```
 (which happens to be a .zip file that contains the dependencies)
 
 To create a new package:
