@@ -125,3 +125,14 @@ Calling pash should be as simple as :
 ```bash
 pash <src> <dest>
 ```
+
+or use the APE binary distribution:
+
+./pash.com
+(which happens to be a .zip file that contains the dependencies)
+
+To create a new package:
+
+cp lua.com.original pash.com
+zip pash.com main.lua inspect.lua templet.lua
+./pash.com
