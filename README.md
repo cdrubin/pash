@@ -135,6 +135,8 @@ or use the [APE](https://justine.lol/ape.html) binary distribution thanks to [co
 
 To create a new package:
 
+```bash
 cp lua.com.original pash.com
 zip pash.com main.lua inspect.lua templet.lua
 ./pash.com
+```
