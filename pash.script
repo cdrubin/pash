@@ -98,7 +98,7 @@ function pash.render_tree( source, destination, level, context, silent )
 
   -- check for 'subdir/_context.lua' and add to context if it exists
   file = io.open( source..'/_context.pash', 'r' )
-  if file then _, context = pash.run_file( source..'/_context.pash', context ); file.close(); if not silent then print( whitespace:rep( level * 2 )..'[found _context.pash at '..source..']' ) end end
+  if file then _, context = pash.run_file( source..'/_context.pash', context ); file:close(); if not silent then print( whitespace:rep( level * 2 )..'[found _context.pash at '..source..']' ) end end
 
   -- create tables of the file and directory names
   for item in lfs.dir( source ) do
