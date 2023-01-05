@@ -98,12 +98,12 @@ function pash.render_tree( source, destination, level, context, silent )
 
   -- check for 'subdir/_context.lua' and add to context if it exists
   file = io.open( source..'/_context.pash', 'r' )
-  if file then _, context = pash.run_file( source..'/_context.pash', context ); file.close(); if not silent then print( whitespace:rep( level * 2 )..'[found _context.pash at '..source..']' ) end end
+  if file then _, context = pash.run_file( source..'/_context.pash', context ); file:close(); if not silent then print( whitespace:rep( level * 2 )..'[found _context.pash at '..source..']' ) end end
 
   -- create tables of the file and directory names
   for item in lfs.dir( source ) do
     local attr = lfs.attributes( source..'/'..item )
-    if item:sub( 1, 1 ) ~= '_' and item:sub( 1, 1 ) ~= '.' and item ~= arg[0] then
+    if item:sub( 1, 1 ) ~= '_' and item:sub( 1, 1 ) ~= '.' and item ~= arg[0] and item ~= 'pash.com' then
       if attr.mode == "directory" then
         table.insert( directories, item )
       elseif attr.mode == 'file' then
@@ -179,6 +179,9 @@ function pash.render_tree( source, destination, level, context, silent )
     if not after_context.page.ignore then
       table.insert( tree, { directory = context.page.directory, file = context.page.file, path = context.page.path, title = after_context.page.title, layout = after_context.page.layout, hidden = after_context.page.hidden } )
       if not silent then 
+        if after_context.page.extension then
+          file = file:gsub( '%.(%a-)$', '.'..after_context.page.extension )
+        end
         outfile = io.open( destination..'/'..file, "w" )
         outfile:write( output )
         outfile:close() 
