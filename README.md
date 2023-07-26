@@ -137,6 +137,6 @@ To create a new package:
 
 ```bash
 cp lua.com.original pash.com
-zip pash.com main.lua inspect.lua templet.lua
+zip pash.com main.lua inspect.lua templet.lua markdown.lua json.lua
 ./pash.com
 ```
