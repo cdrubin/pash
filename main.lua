@@ -1,4 +1,4 @@
-package.path = 'zip:?.lua'
+package.path = '/zip/?.lua'
 
 
 local pash = {}
