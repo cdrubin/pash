@@ -1,0 +1,32 @@
+| 
+| //import { wunc } from './wunc.mjs'
+| let wunc
+| try {
+|   wunc = await import( 'wunc.mjs' )
+| }
+| catch( ex ) {
+|   console.log( ex )	
+| }
+|
+| console.log( os.getcwd()[0] )
+| //console.log( wunc ) //( 'zo' )
+| //try {
+|   //wunc( 'zoo' )
+| //  console.log( wunc )
+| //}
+| //catch( ex ) {
+|   //console.log( 'calling wunc threw exception', ex )
+|   //console.log( ex.stack ) //console.trace()
+| //}
+|
+| const gunc = function( param ) {
+|   return `called with: ${ JSON.stringify( param ) }`
+| }
+|
+|for ( let i = 1; i < 10; ++i ) {
+|  if ( i > 5 ) {
+  Hello, World! (${i})
+    and...
+  gunc ${ gunc( 'moo as string concatenated with ' + `${i} in backticks` ) }
+|  }
+|}
