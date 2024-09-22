@@ -16,9 +16,9 @@ const templet = function( filename ) {
     }
   }
 
-  if ( scriptArgs.length > 2 && scriptArgs[2] == '--debug' ) {
-    print( `${ script }---` )
-  }
+  //if ( scriptArgs.length > 2 && scriptArgs[2] == '--debug' ) {
+    //print( `${ script }---` )
+  //}
   
   return script
 	
@@ -39,7 +39,7 @@ if ( scriptArgs.length < 2 ) {
   console.log( `
 Usage: 
 
-  qjs --std ${ scriptArgs[ 0 ] } [source] (--debug)
+  qjs --std ${ scriptArgs[ 0 ] } [source] (--intermediate)
 ` )
   std.exit( 1 )
 }
@@ -48,7 +48,12 @@ else {
 }
 
 
-evalTemplet( source )
+if ( scriptArgs.length > 2 && scriptArgs[2] == '--intermediate' )
+  print( templet( source ) )
+else
+  evalTemplet( source )
+
+
 
 }
 catch( ex ) {

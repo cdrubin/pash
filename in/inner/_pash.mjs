@@ -1,0 +1,1 @@
+context.template = 'inner.html'

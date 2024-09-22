@@ -1,6 +1,7 @@
 # pashjs
 
 ./qjs --std templet.mjs in/numbers.templet.txt
+./qjs --std templet.mjs in/numbers.templet.txt --intermediate
 
 
 ---

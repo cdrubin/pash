@@ -1,0 +1,1 @@
+context.template = 'base.html'
