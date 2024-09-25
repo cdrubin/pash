@@ -1,193 +1,99 @@
-try {
+try{
 
+if ( typeof pash === 'undefined' )
+  globalThis.pash = { version: '0.1' }
 
-// take in and out directories as parameters
+function templet( filename ) {
 
-/*
+  let script = ''
 
-[ 
-  { n: 'one.txt' }, 
-  { n: 'seven.txt' }, 
-  { n: 'two.txt' }, 
-  { n: 'subdir', c: [ 
-    { n: 'goo.txt' },
-    { n: 'another', c: [
-      { n: 'eight.txt' },
-      { n: 'nine.txt' }	
-    ] },
-    { n: 'shoe', c: [
-      { m: 'three.txt' },
-      { n: 'zoo.txt' }
-    ] } 
-  ] } 
-]
+  try {
+  
+    let file = std.open( filename, 'r' )
+    if ( !file ) throw( `FileNotFound: '${ filename }' was not found` )
 
-
-*/
-
-const recursiveFileList = function ( path, level = 0 ) {
-  let result = []
-  let list = os.readdir( path )[0]
-
-  //console.log( `path: ${path}` )
-
-  for ( let item of list ) {
-    if ( item != '.' && item != '..' ) {
-      let stat = os.stat( path + '/' + item )[0]
-      
-      // if a directory
-      if ( stat.mode & os.S_IFMT & os.S_IFDIR ) {
-        //console.log( `${ '  '.repeat( level ) }${ item }/` )
-      	result.push( { n: item, c: recursiveFileList( path + '/' + item, level + 1 ) } )
+    let lines = std.loadFile( filename ).split( "\n" )
+  
+    for ( let line of lines ) {
+      if ( line.startsWith( '|' ) ) {
+  	    script += line.substring( 1 ) + "\n"
       }
-      else {
-        //console.log( `${ '  '.repeat( level ) }${ item }` )
-      	result.push( { n: item } )
+      else if ( line != '' ) {
+  	    script += 'print( `' + line.replace( '`', '\`' ) + '` )' + "\n"
       }
     }
+
+  }
+  catch( ex ) {
+  	std.err.puts( `${ex}\n` ); if ( ex.stack ) std.err.puts( ex.stack )
   }
   
-  return result
-}
-
-
-
-let source_dir, output_dir
-
-if ( scriptArgs.length < 3 ) {
-  console.log( `
-Usage: 
-
-  qjs --std ${ scriptArgs[ 0 ] } [source directory] [output directory] (temporary directory)
-` )
-  std.exit( 1 )
-}
-else {
-  source_dir = scriptArgs[ 1 ]; output_dir = scriptArgs[ 2 ]
-  std.puts( `${ source_dir } -> ${ output_dir }\n` )
-}
-
-
-let files = recursiveFileList( source_dir )
-console.log( JSON.stringify( files ) )
-
-
-
-
-}
-catch( ex ) {
-  console.log( ex ); console.log( ex.stack )
-}
-
-
-
-
-
-
-
-// recursively copy tree from source to output 
-
-
-
-/*
-let output = ''
-
-const evaluateFile = function( filename ) {
-  
-}
-
-const evaluateLine = function( string ) {
-  
-}
-*/
-
-//let it = 'variable contents'
-//eval( `console.log( \`${it}\` )` )
-
-/*
-const templet = function( filename ) {
-
-  let lines = std.loadFile( filename ).split( "\n" )
-
-  let script = ""
-
-  for ( let line of lines ) {
-    //console.log( line )
-    if ( line.startsWith( '|' ) ) {
-  	  script += line.substring( 1 ) + "\n"
-    }
-    else {
-  	  script += 'console.log( `' + line.replace( '`', '\`' ) + '` )' + "\n"
-    }
-  }
-
-  //console.log( script )
-  //console.log( '---')
   return script
 	
 }
-*/
+pash.templet = templet
 
-/*
-const evalTemplet = function ( filename ) {
+
+const evalTemplet = async function ( filename ) {
 
   let script = templet( filename )
 
   try {
-    std.evalScript( script, { async: true } )
+    await std.evalScript( script, { backtrace_barrier: false, async: true } )
   }
   catch( ex ) {
-    console.log( ex )
-    console.log( ex.stack )
-  }
-  
+  	std.err.puts( `${ ex } (${ filename }${ ex.stack.match( ':[0-9]' )[0] })\n` )
+  }	
 }
+pash.evalTemplet = evalTemplet
 
-evalTemplet( 'example.txt' )
-*/
 
-/*
-let lines = std.loadFile( 'example.txt' ).split( "\n" )
-//console.log( lines )
+if ( scriptArgs[0].endsWith( 'templet.mjs' ) ) {
+  let source
 
-let script = ""
+  if ( scriptArgs.length < 2 ) {
+    std.err.puts( `
+Usage: 
 
-for ( let line of lines ) {
-  //console.log( line )
-  if ( line.startsWith( '|' ) ) {
-  	script += line.substring( 1 ) + "\n"
+  qjs --std ${ scriptArgs[ 0 ] } [source] (--intermediate)
+` )
+    std.exit( 1 )
   }
   else {
-  	script += 'console.log( `' + line.replace( '`', '\`' ) + '` )' + "\n"
+    source = scriptArgs[ 1 ]
   }
+
+  if ( scriptArgs.length > 2 && scriptArgs[2] == '--intermediate' )
+    print( templet( source ) )
+  else
+    evalTemplet( source )
+}
+else if ( scriptArgs[0].endsWith( 'pash.mjs' ) ) {
+
+  let source_dir, output_dir
+
+  if ( scriptArgs.length < 3 ) {
+	std.err.puts( `
+Usage: 
+
+  qjs --std ${ scriptArgs[ 0 ] } [source directory] [output directory] (temporary directory)
+` )
+	std.exit( 1 )
+  }
+  else {
+	source_dir = scriptArgs[ 1 ]; output_dir = scriptArgs[ 2 ]
+	std.puts( `${ source_dir } -> ${ output_dir }\n` )
+  }
+
+}
+else {
+
+  std.err.puts( `Unknown name 'scriptArgs[ 0 ]', try templet.mjs or pash.mjs` )	
 }
 
-console.log( script )
-console.log( '---')
 
-try {
-  std.evalScript( script, { async: true } )
+
 }
 catch( ex ) {
-  console.log( ex )
-  console.log( ex.stack )
+  std.err.puts( `${ex}\n` ); if ( ex.stack ) std.err.puts( ex.stack )
 }
-*/
-/*
-console.log( "\n")
-
-let func = function( param ) {
-  console.log( `func was called with: ${ JSON.stringify( param ) }` )
-}
-
-let env = globalThis
-
-globalThis = {}
-//globalThis = env
-
-globalThis.gunc = env.func
-
-gunc( 'zoo' )
-
-//console.log( JSON.stringify( globalThis ) )
-*/
