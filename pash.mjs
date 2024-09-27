@@ -54,22 +54,9 @@ const templet = function ( filename ) {
     let file = std.open( filename, 'r' )
     if ( !file ) throw( `FileNotFound: '${ filename }' was not found` )
 
-    const string = std.loadFile( filename ) //.split( "\n" )
+    const string = std.loadFile( filename )
 
-    //print( string )
-
-    /*  
-    for ( let line of lines ) {
-      if ( line.startsWith( '|' ) ) {
-  	    script += line.substring( 1 ) + "\n"
-      }
-      else if ( line != '' ) {
-  	    script += 'pash.output( `' + line.replace( '`', '\`' ) + '` )' + "\n"
-      }
-    }
-    */
     script = intermediateTemplet( string.slice( 0, -1 ) )
-    //print( script )
 
   }
   catch( ex ) {
@@ -86,7 +73,7 @@ const evalTemplet = function ( filename ) {
 
   try {
 
-    let script = templet( filename ) //pash.contents = templet( filename )
+    let script = templet( filename )
 
     std.evalScript( script, { backtrace_barrier: false } )
 
@@ -135,8 +122,6 @@ const dir_callback = function( path, level ) {
   if ( contextscript = std.loadFile( path + '/' + pash.contextfile ) ) {
     std.evalScript( contextscript ); std.out.puts( `  (pash.contextfile '${ pash.contextfile }' found, evaluated)` )
   }
-
-  //context.toroot += '../'
 
   std.out.puts( '\n' )
 }
@@ -231,44 +216,6 @@ const recurseTree = function ( inpath, outpath, file_callback, dir_callback, lev
   
   return result
 }
-//pash.recursiveFileList = recursiveFileList
-
-
-
-/*
-const recursiveFileListCallback = function ( path, callback, tree = [], level = 0 ) {
-  let list = os.readdir( path )[0]
-
-  //console.log( `path: ${path}` )
-
-  for ( let item of list ) {
-    if ( item != '.' && item != '..' ) {
-      let stat = os.stat( path + '/' + item )[0]
-      
-      // if a directory
-      if ( ! stat.mode & os.S_IFMT & os.S_IFDIR ) {
-        //console.log( `${ '  '.repeat( level ) }${ item }` )
-      	//result.push( { n: item } )
-      	callback( item, tree, level )
-        tree.push( { n: item } )
-      }
-      else {
-        //console.log( `${ '  '.repeat( level ) }${ item }/` )
-      	tree.push( { n: item, c: recursiveFileListCallback( path + '/' + item, tree, level + 1 ) } )
-      }
-    }
-  }
-  
-  return tree
-}
-pash.recursiveFileListCallback = recursiveFileListCallback
-*/
-
-
-
-
-
-
 
 
 
@@ -316,15 +263,6 @@ Usage:
     pash.outpath = outpath
     
     let tree = recurseTree( inpath, outpath, file_callback, dir_callback ) 
-    /*, function( filename, tree, level ) {
-      print( `${ '  '.repeat( level ) }${ filename }` )
-    } )
-    */
-
-    //print( JSON.stringify( tree ) )
-
-	//let content = '*here*'
-	//let processed_content = pash.evalTemplet( )
   }
 
 }
