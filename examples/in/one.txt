@@ -1,2 +1,0 @@
-one.txt content
-context.message: ${ context.message }

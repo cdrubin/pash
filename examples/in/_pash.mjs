@@ -1,1 +1,1 @@
-context.message = "original message"
+context.template = '_template/base.html'

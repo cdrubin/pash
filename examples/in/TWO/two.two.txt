@@ -1,2 +1,0 @@
-two.two.txt here! (pash.versoin: ${ pash.version })
-context.message: ${ context.message }

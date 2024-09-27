@@ -1,6 +1,0 @@
-This is the top of the plain text template
-
-${ pash.content }
-
-This is the bottom of the plain text template
-context.message: ${ context.message }
