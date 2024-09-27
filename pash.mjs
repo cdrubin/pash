@@ -12,49 +12,12 @@ if ( typeof pash === 'undefined' ) {
     skip: false,  // while this is true files are not processed at all
     version: '0.1',
   } 
-  globalThis.context = { template: null }
+  globalThis.context = { 
+    template: null
+  }
   //globalThis.include = function( filename ) { await evalScript( pash.)}
 }
 
-/*
-const intermediateTemplet = function( templet ) {
-  let script = ''
-
-  try {
-  
-    let file = std.open( filename, 'r' )
-    if ( !file ) throw( `FileNotFound: '${ filename }' was not found` )
-
-    let lines = std.loadFile( filename ).split( "\n" )
-  
-    for ( let line of lines ) {
-      if ( line.startsWith( '|' ) ) {
-  	    script += line.substring( 1 ) + "\n"
-      }
-      else if ( line != '' ) {
-  	    script += 'print( `' + line.replace( '`', '\`' ) + '` )' + "\n"
-      }
-    }
-
-  }
-  catch( ex ) {
-  	std.err.puts( `${ex}\n` ); if ( ex.stack ) std.err.puts( ex.stack )
-  }
-  
-  return script
-	
-}
-*/
-
-/*
-const evalTemplet = function( string ) {
-
-}
-
-const loadTemplet = function( filename ) {
-	
-}
-*/
 
 
 const intermediateTemplet = function( string ) {
@@ -64,10 +27,11 @@ const intermediateTemplet = function( string ) {
   try {
     for ( let line of string.split( '\n' ) ) {
       if ( line.startsWith( '|' ) ) {
-  	    script += line.substring( 1 ) + "\n"
+  	    script += line.substring( 1 ) + '\n'
       }
-      else if ( line != '' ) {
-  	    script += 'pash.output( `' + line.replace( '`', '\`' ) + '` )' + "\n"
+      else {
+      //else if ( line != '' ) {
+  	    script += 'pash.output( `' + line.replace( '`', '\`' ) + '` )' + '\n'
       }
     }
   }
@@ -92,6 +56,8 @@ const templet = function ( filename ) {
 
     const string = std.loadFile( filename ) //.split( "\n" )
 
+    //print( string )
+
     /*  
     for ( let line of lines ) {
       if ( line.startsWith( '|' ) ) {
@@ -102,7 +68,8 @@ const templet = function ( filename ) {
       }
     }
     */
-    script = intermediateTemplet( string )
+    script = intermediateTemplet( string.slice( 0, -1 ) )
+    //print( script )
 
   }
   catch( ex ) {
@@ -115,13 +82,13 @@ const templet = function ( filename ) {
 pash.templet = templet
 
 
-const evalTemplet = async function ( filename ) {
+const evalTemplet = function ( filename ) {
 
   try {
 
     let script = templet( filename ) //pash.contents = templet( filename )
 
-    await std.evalScript( script, { backtrace_barrier: false, async: true } )
+    std.evalScript( script, { backtrace_barrier: false } )
 
   }
   catch( ex ) {
@@ -163,10 +130,13 @@ pash.copyFile = copyFile
 const dir_callback = function( path, level ) {
   let directoryname = path.split( '/' ).at( -1 )
 
-  let context
-  if ( context = std.loadFile( path + '/' + pash.contextfile ) ) {
-  	std.evalScript( context ); std.out.puts( `  (pash.contextfile '${ pash.contextfile }' found, evaluated)` )
+  let contextscript = ''
+
+  if ( contextscript = std.loadFile( path + '/' + pash.contextfile ) ) {
+    std.evalScript( contextscript ); std.out.puts( `  (pash.contextfile '${ pash.contextfile }' found, evaluated)` )
   }
+
+  //context.toroot += '../'
 
   std.out.puts( '\n' )
 }
@@ -174,35 +144,31 @@ const dir_callback = function( path, level ) {
 
 
 
-const file_callback = async function( inpath, outpath ) {
-  //let filename = inpath.split( '/' ).at( -1 )
+const file_callback = function( inpath, outpath ) {
   try {
   
-    //let outfile = std.open( outpath, 'w' )
-
     let content = ''
 
-    pash.output = function( value ) { content += std.sprintf( "%s\n", value ) }
+    pash.output = function( value ) { content += value + '\n' }
 
-    await evalTemplet( inpath ) //pash.contents = templet( filename )
-    pash.content = content
+    evalTemplet( inpath )
+    pash.content = content.slice( 0, -1 )
+
+        
+    if ( context.template ) {
+      content = ''
+      evalTemplet( pash.inpath + '/' + context.template )
+      pash.content = content
+    }
     
-    if ( pash.template )
-      pash.content = evalTemplet( pash.template )
-
     let outfile = std.open( outpath, 'w' )
     outfile.puts( pash.content )
     outfile.close()
-      
-    //await std.evalScript( pash.intermediate, { backtrace_barrier: false, async: true } )
 
   }
   catch( ex ) {
   	std.err.puts( `${ ex } (${ inpath })\n` ); std.err.puts( ex.stack )
   }	
-
-
-  //std.out.puts( '\n' )
 }
 
 
@@ -345,6 +311,10 @@ Usage:
   else {
 	inpath = scriptArgs[ 1 ]; outpath = scriptArgs[ 2 ]
 	std.out.puts( `${ inpath } -> ${ outpath }\n` )
+
+    pash.inpath = inpath
+    pash.outpath = outpath
+    
     let tree = recurseTree( inpath, outpath, file_callback, dir_callback ) 
     /*, function( filename, tree, level ) {
       print( `${ '  '.repeat( level ) }${ filename }` )
