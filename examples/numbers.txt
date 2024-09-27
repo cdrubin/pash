@@ -4,3 +4,4 @@ ${ i }: ${ numbers[ i -1 ] }
 | if ( pash ) {
 |   pash.evalTemplet( 'examples/version.txt' )
 | }
+| std.evalScript( `print( 'yes, really, ${ pash.version }' )` )

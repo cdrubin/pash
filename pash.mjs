@@ -1,10 +1,23 @@
 try{
 
-if ( typeof pash === 'undefined' )
-  globalThis.pash = { version: '0.1' }
+if ( typeof std === 'undefined' ) throw ( `StdRequired: was qjs invoked with the '--std' flag?`)
 
-function templet( filename ) {
+if ( typeof pash === 'undefined' ) {
+  globalThis.pash = { 
+    contextfile: [ '_pash.mjs' ],
+    copy: [ '\.gif$', '\.ico$', '\.js$', '\.jpg$', '\.mjs$', '\.png$', '\.ttf$', '\.woff2$' ], 
+    ignoredirs: [ '^[._]' ],
+    ignorefiles: [ '^[._]' ], 
+    output( value) { print( value ) },  // override in file_callback
+    skip: false,  // while this is true files are not processed at all
+    version: '0.1',
+  } 
+  globalThis.context = { template: null }
+  //globalThis.include = function( filename ) { await evalScript( pash.)}
+}
 
+/*
+const intermediateTemplet = function( templet ) {
   let script = ''
 
   try {
@@ -31,21 +44,268 @@ function templet( filename ) {
   return script
 	
 }
+*/
+
+/*
+const evalTemplet = function( string ) {
+
+}
+
+const loadTemplet = function( filename ) {
+	
+}
+*/
+
+
+const intermediateTemplet = function( string ) {
+
+  let script = ''
+
+  try {
+    for ( let line of string.split( '\n' ) ) {
+      if ( line.startsWith( '|' ) ) {
+  	    script += line.substring( 1 ) + "\n"
+      }
+      else if ( line != '' ) {
+  	    script += 'pash.output( `' + line.replace( '`', '\`' ) + '` )' + "\n"
+      }
+    }
+  }
+  catch( ex ) {
+  	std.err.puts( `${ex}\n` ); if ( ex.stack ) std.err.puts( ex.stack )
+  }
+  
+  return script
+  
+}
+pash.intermediateTemplet = intermediateTemplet
+
+
+const templet = function ( filename ) {
+
+  let script = ''
+
+  try {
+  
+    let file = std.open( filename, 'r' )
+    if ( !file ) throw( `FileNotFound: '${ filename }' was not found` )
+
+    const string = std.loadFile( filename ) //.split( "\n" )
+
+    /*  
+    for ( let line of lines ) {
+      if ( line.startsWith( '|' ) ) {
+  	    script += line.substring( 1 ) + "\n"
+      }
+      else if ( line != '' ) {
+  	    script += 'pash.output( `' + line.replace( '`', '\`' ) + '` )' + "\n"
+      }
+    }
+    */
+    script = intermediateTemplet( string )
+
+  }
+  catch( ex ) {
+  	std.err.puts( `${ex}\n` ); if ( ex.stack ) std.err.puts( ex.stack )
+  }
+  
+  return script
+	
+}
 pash.templet = templet
 
 
 const evalTemplet = async function ( filename ) {
 
-  let script = templet( filename )
-
   try {
+
+    let script = templet( filename ) //pash.contents = templet( filename )
+
     await std.evalScript( script, { backtrace_barrier: false, async: true } )
+
   }
   catch( ex ) {
-  	std.err.puts( `${ ex } (${ filename }${ ex.stack.match( ':[0-9]' )[0] })\n` )
+  	std.err.puts( `${ ex } (${ filename })\n` ); std.err.puts( ex.stack )
   }	
 }
 pash.evalTemplet = evalTemplet
+
+
+const copyFile = function( inpath, outpath ) {
+
+  try {
+
+    let infile = std.open( inpath, 'r' )
+    let outfile = std.open( outpath, 'w' )
+
+    const size = 1024 * 1024
+
+    let buffer = new ArrayBuffer( size )
+    let bytes
+
+    while ( 0 < ( bytes = infile.read( buffer, 0, size ) ) )
+      outfile.write( buffer, 0, bytes )
+
+    infile.close()
+    outfile.close()
+  }
+  catch ( ex ) {
+    print( ex ); print( ex.stack )
+  }
+}
+pash.copyFile = copyFile
+
+
+    
+
+
+
+const dir_callback = function( path, level ) {
+  let directoryname = path.split( '/' ).at( -1 )
+
+  let context
+  if ( context = std.loadFile( path + '/' + pash.contextfile ) ) {
+  	std.evalScript( context ); std.out.puts( `  (pash.contextfile '${ pash.contextfile }' found, evaluated)` )
+  }
+
+  std.out.puts( '\n' )
+}
+
+
+
+
+const file_callback = async function( inpath, outpath ) {
+  //let filename = inpath.split( '/' ).at( -1 )
+  try {
+  
+    //let outfile = std.open( outpath, 'w' )
+
+    let content = ''
+
+    pash.output = function( value ) { content += std.sprintf( "%s\n", value ) }
+
+    await evalTemplet( inpath ) //pash.contents = templet( filename )
+    pash.content = content
+    
+    if ( pash.template )
+      pash.content = evalTemplet( pash.template )
+
+    let outfile = std.open( outpath, 'w' )
+    outfile.puts( pash.content )
+    outfile.close()
+      
+    //await std.evalScript( pash.intermediate, { backtrace_barrier: false, async: true } )
+
+  }
+  catch( ex ) {
+  	std.err.puts( `${ ex } (${ inpath })\n` ); std.err.puts( ex.stack )
+  }	
+
+
+  //std.out.puts( '\n' )
+}
+
+
+
+const recurseTree = function ( inpath, outpath, file_callback, dir_callback, level = 0 ) {
+  let result = []
+  
+  let directoryname = inpath.split( '/' ).at( -1 )
+  std.out.puts( '  '.repeat( level ) + directoryname + '/' )
+
+  if ( pash.skip ) { std.out.puts( `  (pash.skip is true, skipped)\n` ); return } 
+  for ( let pattern of pash.ignoredirs ) if ( new RegExp( pattern ).test( directoryname ) ) { std.out.puts( `  (pash.ignoredirs[ '${ pattern }' ] matched, ignored)\n` ); return }
+
+  os.mkdir( outpath )
+  dir_callback( inpath, level )
+  
+  let list = os.readdir( inpath )[0]
+
+  itemloop: for ( let item of list ) {
+    
+    if ( item != '.' && item != '..' ) {
+      let stat = os.stat( inpath + '/' + item )[0]
+      
+      // if a directory
+      if ( stat.mode & os.S_IFMT & os.S_IFDIR ) {
+        let savedPash = { ...pash }; let savedContext = { ...context }
+                        
+      	result.push( { n: item, c: recurseTree( inpath + '/' + item, outpath + '/' + item, file_callback, dir_callback, level + 1 ) } )
+
+      	pash = savedPash; context = savedContext
+      }
+      else {
+        std.out.puts( '  '.repeat( level + 1 ) + item )
+
+        if ( pash.skip ) { 
+          std.out.puts( `  (pash.skip is true, skipped)\n` )
+          continue itemloop
+        } 
+        
+        for ( let pattern of pash.ignorefiles ) 
+          if ( new RegExp( pattern ).test( item ) ) { 
+            std.out.puts( `  (pash.ignorefiles[ '${ pattern }' ] matched, ignored)\n` )
+            continue itemloop 
+          }
+
+        for ( let pattern of pash.copy ) 
+          if ( new RegExp( pattern ).test( item ) ) {
+			copyFile( inpath + '/' + item, outpath + '/' + item )
+            std.out.puts( `  (pash.copy[ '${ pattern }' ] matched, copied)\n` )
+            continue itemloop
+          }
+
+        file_callback( inpath + '/' + item, outpath + '/' + item )
+        std.out.puts( '\n' )
+        
+      	result.push( { n: item } )
+      }
+    }
+  }
+  
+  return result
+}
+//pash.recursiveFileList = recursiveFileList
+
+
+
+/*
+const recursiveFileListCallback = function ( path, callback, tree = [], level = 0 ) {
+  let list = os.readdir( path )[0]
+
+  //console.log( `path: ${path}` )
+
+  for ( let item of list ) {
+    if ( item != '.' && item != '..' ) {
+      let stat = os.stat( path + '/' + item )[0]
+      
+      // if a directory
+      if ( ! stat.mode & os.S_IFMT & os.S_IFDIR ) {
+        //console.log( `${ '  '.repeat( level ) }${ item }` )
+      	//result.push( { n: item } )
+      	callback( item, tree, level )
+        tree.push( { n: item } )
+      }
+      else {
+        //console.log( `${ '  '.repeat( level ) }${ item }/` )
+      	tree.push( { n: item, c: recursiveFileListCallback( path + '/' + item, tree, level + 1 ) } )
+      }
+    }
+  }
+  
+  return tree
+}
+pash.recursiveFileListCallback = recursiveFileListCallback
+*/
+
+
+
+
+
+
+
+
+
 
 
 if ( scriptArgs[0].endsWith( 'templet.mjs' ) ) {
@@ -55,7 +315,7 @@ if ( scriptArgs[0].endsWith( 'templet.mjs' ) ) {
     std.err.puts( `
 Usage: 
 
-  qjs --std ${ scriptArgs[ 0 ] } [source] (--intermediate)
+   qjs --std ${ scriptArgs[ 0 ] } [source] (--intermediate)
 ` )
     std.exit( 1 )
   }
@@ -63,14 +323,16 @@ Usage:
     source = scriptArgs[ 1 ]
   }
 
-  if ( scriptArgs.length > 2 && scriptArgs[2] == '--intermediate' )
-    print( templet( source ) )
-  else
+  if ( scriptArgs.length > 2 && scriptArgs[2] == '--intermediate' ) {
+    std.out.puts( templet( source ) )
+  }
+  else {
     evalTemplet( source )
+  }
 }
 else if ( scriptArgs[0].endsWith( 'pash.mjs' ) ) {
 
-  let source_dir, output_dir
+  let inpath, outpath
 
   if ( scriptArgs.length < 3 ) {
 	std.err.puts( `
@@ -81,19 +343,29 @@ Usage:
 	std.exit( 1 )
   }
   else {
-	source_dir = scriptArgs[ 1 ]; output_dir = scriptArgs[ 2 ]
-	std.puts( `${ source_dir } -> ${ output_dir }\n` )
+	inpath = scriptArgs[ 1 ]; outpath = scriptArgs[ 2 ]
+	std.out.puts( `${ inpath } -> ${ outpath }\n` )
+    let tree = recurseTree( inpath, outpath, file_callback, dir_callback ) 
+    /*, function( filename, tree, level ) {
+      print( `${ '  '.repeat( level ) }${ filename }` )
+    } )
+    */
+
+    //print( JSON.stringify( tree ) )
+
+	//let content = '*here*'
+	//let processed_content = pash.evalTemplet( )
   }
 
 }
 else {
 
-  std.err.puts( `Unknown name 'scriptArgs[ 0 ]', try templet.mjs or pash.mjs` )	
+  print( `Unknown name 'scriptArgs[ 0 ]', try templet.mjs or pash.mjs` )	
 }
 
 
 
 }
 catch( ex ) {
-  std.err.puts( `${ex}\n` ); if ( ex.stack ) std.err.puts( ex.stack )
+  print( `${ex}\n` ); if ( ex.stack ) std.err.puts( ex.stack )
 }
