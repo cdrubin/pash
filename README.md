@@ -1,7 +1,7 @@
 # pash
 
 zip pash .init.mjs pash.mjs marked.esm.js
-
+(requires: https://cosmo.zip/pub/cosmos/bin/zip)
 
 
 ## templet
