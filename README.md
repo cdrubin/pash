@@ -1,4 +1,10 @@
-# pashjs
+# pash
+
+zip pash .init.mjs pash.mjs marked.esm.js
+
+
+
+## templet
 
 ./qjs --std templet.mjs examples/numbers.templet.txt
 ./qjs --std templet.mjs examples/numbers.templet.txt --intermediate
