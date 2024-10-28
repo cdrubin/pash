@@ -1,1 +1,1 @@
-pash.mjs
+pash.standalone_script.mjs
