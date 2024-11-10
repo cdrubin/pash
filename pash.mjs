@@ -1,6 +1,8 @@
 try{
 
 const marked = await import( './marked.esm.js' )
+const { Base64 } = await import( './chromium-base64.js' )
+
 
 if ( typeof std === 'undefined' ) throw ( `StdRequired: was qjs invoked with the '--std' flag?`)
 
@@ -36,6 +38,8 @@ const intermediateTemplet = function( string ) {
   	    script += 'pash.output( `' + line.replace( '`', '\`' ) + '` )' + '\n'
       }
     }
+	script = script.slice( 0, -1 )
+    
   }
   catch( ex ) {
   	std.err.puts( `${ex}\n` ); if ( ex.stack ) std.err.puts( ex.stack )
@@ -58,7 +62,7 @@ const templet = function ( filename ) {
 
     const string = std.loadFile( filename )
 
-    script = intermediateTemplet( string.slice( 0, -1 ) )
+    script = intermediateTemplet( string )
 
   }
   catch( ex ) {
@@ -130,19 +134,78 @@ const dir_callback = function( path, level ) {
 
 
 
+const reference_style_images_to_files = function( inpath, outpath, content ) {
+  try {
+
+	let modified_lines = []
+
+	// assume outpath ends in '.html'
+    let images_outpath_root = outpath.slice( 0, -5 ) + '_image'
+ 	let images = []
+
+    const regex = /^\[image(\d+)\]: <data:image\/(.*);base64,(.*)>/
+
+    let lines = content.split( '\n' )
+    for ( let line of lines ) {
+      if ( line.startsWith( '[image' ) ) {
+      
+      	let captures = line.match( regex )
+		if ( captures ) {
+      	
+      	  let number = captures[ 1 ]; let extension = captures[ 2 ]; let base64 = captures[ 3 ]
+      	  let image_path = images_outpath_root + '_' + number + '.' + extension
+      	  let image_name = image_path.slice( image_path.lastIndexOf( '/' ) + 1 )
+      	  images[ number ] = image_name
+
+		  // base64 to bytes
+		  let array = new Base64().base64ToBytes( base64 )
+      	  const byteArray = new Uint8Array( array )
+	      let image_file = std.open( image_path, 'w' )
+	      image_file.write( byteArray.buffer, 0, byteArray.length )
+	    }
+	    else {
+      	  modified_lines.push( line )
+	    }
+	    
+      }
+      else {
+      	modified_lines.push( line )
+      }
+    }
+
+	let modified_content = ''
+
+    for ( let line of modified_lines ) {
+      modified_content += line.replace( /!\[(.*)\]\[image(\d+)\]/g, function( match, alt, number ) {
+		return `![${ alt }](${ images[ number ] })`
+      } ) + '\n'
+    }
+
+	return modified_content.slice( 0, -1 )
+	
+  }	
+  catch( ex ) {
+  	std.err.puts( `${ ex } (${ inpath })\n` ); std.err.puts( ex.stack )  	
+  }
+}
+
 
 const file_callback = function( inpath, outpath ) {
   try {
   
     let content = ''
 
+	// string output for eval functions
     pash.output = function( value ) { content += value + '\n' }
 
     evalTemplet( inpath )
 
     if ( inpath.endsWith( '.md' ) ) {
       outpath = outpath.slice( 0, -3 ) + '.html'
-      pash.content = marked.parse( content.slice( 0, -1 ) )
+      
+      content = reference_style_images_to_files( inpath, outpath, content )
+      pash.content = marked.parse( content )
+      
     }  
     else { 
       pash.content = content.slice( 0, -1 )

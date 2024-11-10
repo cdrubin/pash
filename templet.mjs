@@ -1,1 +1,0 @@
-pash.standalone_script.mjs
