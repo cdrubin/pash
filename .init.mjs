@@ -1,2 +1,2 @@
 
-import 'pash.mjs'
+import './pash.mjs'

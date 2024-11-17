@@ -19,7 +19,6 @@ if ( typeof pash === 'undefined' ) {
   globalThis.context = { 
     template: null
   }
-  //globalThis.include = function( filename ) { await evalScript( pash.)}
 }
 
 
@@ -60,7 +59,10 @@ const templet = function ( filename ) {
     let file = std.open( filename, 'r' )
     if ( !file ) throw( `FileNotFound: '${ filename }' was not found` )
 
-    const string = std.loadFile( filename )
+    let string = std.loadFile( filename )
+    
+    if ( string.endsWith( '\n' ) )
+	  string = string.slice( 0, -1 )
 
     script = intermediateTemplet( string )
 
@@ -73,6 +75,34 @@ const templet = function ( filename ) {
 	
 }
 pash.templet = templet
+
+
+const include = function ( filename ) {
+
+  try {
+
+    let script = templet( pash.inpath + '/' + filename )
+	
+	let previous_output = pash.output
+	let included = ''
+    pash.output = function( value ) { included += value + '\n' }
+
+    std.evalScript( script, { backtrace_barrier: false } )
+
+    pash.output = previous_output
+
+    if ( included.endsWith( '\n' ) )
+	  included = included.slice( 0, -1 )
+
+    return included
+
+  }
+  catch( ex ) {
+  	std.err.puts( `${ ex } (${ filename })\n` ); std.err.puts( ex.stack )
+  }	
+}
+pash.include = include
+
 
 
 const evalTemplet = function ( filename ) {

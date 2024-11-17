@@ -1,16 +1,16 @@
 # pash
 
+`make build` will do the following:
+
 curl -L https://github.com/cdrubin/quickjs/releases/latest/download/qjs -o pash && chmod +x pash
 curl -L https://cosmo.zip/pub/cosmos/bin/zip -o zip && chmod +x zip
-zip pash .init.mjs pash.mjs marked.esm.js
-(requires: https://cosmo.zip/pub/cosmos/bin/zip)
+zip pash .init.mjs pash.mjs marked.esm.js chromium-base64.js
+(valid modification of APE zips requires: https://cosmo.zip/pub/cosmos/bin/zip)
 
 
-## templet
+## usage:
 
-./qjs --std templet.mjs examples/numbers.templet.txt
-./qjs --std templet.mjs examples/numbers.templet.txt --intermediate
-
+./pash [indir] [outdir]
 
 ---
 
