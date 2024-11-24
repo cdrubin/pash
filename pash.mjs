@@ -12,7 +12,8 @@ if ( typeof pash === 'undefined' ) {
     copy: [ '\.gif$', '\.ico$', '\.js$', '\.jpg$', '\.mjs$', '\.png$', '\.ttf$', '\.woff2$' ], 
     ignoredirs: [ '^[._]' ],
     ignorefiles: [ '^[._]' ], 
-    output( value) { print( value ) },  // override in file_callback
+    output( string ) { print( string ) },  // override in file_callback
+    //outputintermediate: null, // ( string ): 
     skip: false,  // while this is true files are not processed at all
     version: '0.1',
   } 
