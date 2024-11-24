@@ -1,2 +1,2 @@
-context.template = '_template/post.html'
+context.layout = '_layout/post.html'
 context.section = 'blog'

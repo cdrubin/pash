@@ -18,7 +18,7 @@ if ( typeof pash === 'undefined' ) {
     version: '0.1',
   } 
   globalThis.context = { 
-    template: null
+    layout: null
   }
 }
 
@@ -243,9 +243,9 @@ const file_callback = function( inpath, outpath ) {
     }
 
         
-    if ( context.template ) {
+    if ( context.layout ) {
       content = ''
-      evalTemplet( pash.inpath + '/' + context.template )
+      evalTemplet( pash.inpath + '/' + context.layout )
       pash.content = content
     }
     

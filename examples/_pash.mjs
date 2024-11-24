@@ -1,1 +1,1 @@
-context.template = 'base.html'
+context.layout = 'base.html'

@@ -1,1 +1,2 @@
-context.template = 'inner.html'
+
+context.layout = 'inner.html'
