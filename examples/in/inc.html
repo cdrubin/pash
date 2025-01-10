@@ -1,5 +1,18 @@
+TODO: fix context.layout = 'moo/goo' seems to impact more than one file!
+
 | pash.output( '12' )
- [ ${ pash.include ( '_include/simple.md' ) } ]
+ [ ${ std.loadFile( pash.inpath + '/' + '_include/simple.md' ) } ]
+===
+ [ ${ pash.intermediateTemplet( pash.inpath + '/' + 'include/simple.md' ) } ]
++++
+ [ ${ pash.templet( pash.inpath + '/' + '_include/simple.md' ) } ]
+---
+| pash.evalTemplet( pash.inpath + '/' + '_include/simple.md' )
+~~~
+| pash.include( '_include/simple.mdo' )
+%%%
+| pash.include( '_include/simple.md' )
+
 moo
 | pash.output( '345' )
 

@@ -13,7 +13,7 @@ if ( typeof pash === 'undefined' ) {
     ignoredirs: [ '^[._]' ],
     ignorefiles: [ '^[._]' ], 
     output( string ) { print( string ) },  // override in file_callback
-    //outputintermediate: null, // ( string ): 
+    outputintermediate: null, // { print( string ) }, 
     skip: false,  // while this is true files are not processed at all
     version: '0.1',
   } 
@@ -34,7 +34,6 @@ const intermediateTemplet = function( string ) {
   	    script += line.substring( 1 ) + '\n'
       }
       else {
-      //else if ( line != '' ) {
   	    script += 'pash.output( `' + line.replace( '`', '\`' ) + '` )' + '\n'
       }
     }
@@ -58,10 +57,10 @@ const templet = function ( filename ) {
   try {
   
     let file = std.open( filename, 'r' )
-    if ( !file ) throw( `FileNotFound: '${ filename }' was not found` )
+    if ( !file ) throw( `FileNotFound: '${ filename }'` )
 
     let string = std.loadFile( filename )
-    
+       
     if ( string.endsWith( '\n' ) )
 	  string = string.slice( 0, -1 )
 
@@ -78,6 +77,7 @@ const templet = function ( filename ) {
 pash.templet = templet
 
 
+/*
 const include = function ( filename ) {
 
   try {
@@ -103,7 +103,7 @@ const include = function ( filename ) {
   }	
 }
 pash.include = include
-
+*/
 
 
 const evalTemplet = function ( filename ) {
@@ -120,6 +120,14 @@ const evalTemplet = function ( filename ) {
   }	
 }
 pash.evalTemplet = evalTemplet
+
+
+
+const include = function( filename ) {
+  evalTemplet( pash.inpath + '/' + filename )	
+}
+pash.include = include
+
 
 
 const copyFile = function( inpath, outpath ) {
@@ -282,10 +290,9 @@ const recurseTree = function ( inpath, outpath, file_callback, dir_callback, lev
       
       // if a directory
       if ( stat.mode & os.S_IFMT & os.S_IFDIR ) {
-        let savedPash = { ...pash }; let savedContext = { ...context }
-                        
+      
+        let savedPash = { ...pash }; let savedContext = { ...context }                        
       	result.push( { n: item, c: recurseTree( inpath + '/' + item, outpath + '/' + item, file_callback, dir_callback, level + 1 ) } )
-
       	pash = savedPash; context = savedContext
       }
       else {
@@ -309,7 +316,10 @@ const recurseTree = function ( inpath, outpath, file_callback, dir_callback, lev
             continue itemloop
           }
 
+        let fileSavedPash = { ...pash }; let fileSavedContext = { ...context }
         file_callback( inpath + '/' + item, outpath + '/' + item )
+        pash = fileSavedPash; context = fileSavedContext
+        
         std.out.puts( '\n' )
         
       	result.push( { n: item } )
