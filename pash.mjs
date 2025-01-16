@@ -43,7 +43,7 @@ pash.intermediateTemplet = function( string ) {
 }
 
 
-const pash.templet = function ( filename ) {
+pash.templet = function ( filename ) {
 
   let script = ''
 
@@ -57,7 +57,7 @@ const pash.templet = function ( filename ) {
     if ( string.endsWith( '\n' ) )
 	  string = string.slice( 0, -1 )
 
-    script = intermediateTemplet( string )
+    script = pash.intermediateTemplet( string )
 
   }
   catch( ex ) {
@@ -102,7 +102,7 @@ pash.evalTemplet = function ( filename ) {
 
   try {
 
-    let script = templet( filename )
+    let script = pash.templet( filename )
 
     std.evalScript( script, { backtrace_barrier: false } )
 
@@ -113,12 +113,13 @@ pash.evalTemplet = function ( filename ) {
 }
 
 
-const pash.include = function( filename ) {
-  evalTemplet( pash.inpath + '/' + filename )	
+pash.include = function( filename ) {
+  pash.evalTemplet( pash.inpath + '/' + filename )
+  return ''	
 }
 
 
-const pash.copyFile = function( inpath, outpath ) {
+pash.copyFile = function( inpath, outpath ) {
 
   try {
 
@@ -220,7 +221,7 @@ const file_callback = function( inpath, outpath ) {
 	// string output for eval functions
     pash.output = function( value ) { content += value + '\n' }
 
-    evalTemplet( inpath )
+    pash.evalTemplet( inpath )
 
     if ( inpath.endsWith( '.md' ) ) {
       outpath = outpath.slice( 0, -3 ) + '.html'
@@ -236,7 +237,7 @@ const file_callback = function( inpath, outpath ) {
         
     if ( context.layout ) {
       content = ''
-      evalTemplet( pash.inpath + '/' + context.layout )
+      pash.evalTemplet( pash.inpath + '/' + context.layout )
       pash.content = content
     }
     
@@ -293,7 +294,7 @@ const recurseTree = function ( inpath, outpath, file_callback, dir_callback, lev
 
         for ( let pattern of pash.copyextensions ) 
           if ( new RegExp( pattern ).test( item ) ) {
-			copyFile( inpath + '/' + item, outpath + '/' + item )
+			pash.copyFile( inpath + '/' + item, outpath + '/' + item )
             std.out.puts( '  '.repeat( level + 1 ) + item + `  (pash.copyextensions[ '${ pattern }' ] matched, copied)\n` )
             continue itemloop
           }
