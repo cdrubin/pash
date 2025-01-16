@@ -1,30 +1,24 @@
-try{
+try {
 
 const marked = await import( './marked.esm.js' )
 const { Base64 } = await import( './chromium-base64.js' )
 
-
-if ( typeof std === 'undefined' ) throw ( `StdRequired: was qjs invoked with the '--std' flag?`)
-
-if ( typeof pash === 'undefined' ) {
-  globalThis.pash = { 
-    contextfile: [ '_pash.mjs' ],
-    copy: [ '\.gif$', '\.ico$', '\.js$', '\.jpg$', '\.mjs$', '\.png$', '\.ttf$', '\.woff2$' ], 
-    ignoredirs: [ '^[._]' ],
-    ignorefiles: [ '^[._]' ], 
-    output( string ) { print( string ) },  // override in file_callback
-    outputintermediate: null, // { print( string ) }, 
-    skip: false,  // while this is true files are not processed at all
-    version: '0.1',
-  } 
-  globalThis.context = { 
-    layout: null
-  }
+globalThis.pash = { 
+  contextfilename: '_context.mjs',
+  copyextensions: [ '\.gif$', '\.ico$', '\.js$', '\.jpg$', '\.mjs$', '\.png$', '\.ttf$', '\.woff2$' ], 
+  ignoredirs: [ '^[._]' ],
+  ignorefiles: [ '^[._]' ], 
+  output( string ) { print( string ) },  // override in file_callback
+  skip: false,  // while this is true files are not processed at all
+  version: '0.1',
+} 
+globalThis.context = { 
+  layout: null
 }
 
 
 
-const intermediateTemplet = function( string ) {
+pash.intermediateTemplet = function( string ) {
 
   let script = ''
 
@@ -47,10 +41,9 @@ const intermediateTemplet = function( string ) {
   return script
   
 }
-pash.intermediateTemplet = intermediateTemplet
 
 
-const templet = function ( filename ) {
+const pash.templet = function ( filename ) {
 
   let script = ''
 
@@ -74,7 +67,6 @@ const templet = function ( filename ) {
   return script
 	
 }
-pash.templet = templet
 
 
 /*
@@ -106,7 +98,7 @@ pash.include = include
 */
 
 
-const evalTemplet = function ( filename ) {
+pash.evalTemplet = function ( filename ) {
 
   try {
 
@@ -119,18 +111,14 @@ const evalTemplet = function ( filename ) {
   	std.err.puts( `${ ex } (${ filename })\n` ); std.err.puts( ex.stack )
   }	
 }
-pash.evalTemplet = evalTemplet
 
 
-
-const include = function( filename ) {
+const pash.include = function( filename ) {
   evalTemplet( pash.inpath + '/' + filename )	
 }
-pash.include = include
 
 
-
-const copyFile = function( inpath, outpath ) {
+const pash.copyFile = function( inpath, outpath ) {
 
   try {
 
@@ -152,11 +140,6 @@ const copyFile = function( inpath, outpath ) {
     print( ex ); print( ex.stack )
   }
 }
-pash.copyFile = copyFile
-
-
-    
-
 
 
 const dir_callback = function( path, level ) {
@@ -164,8 +147,8 @@ const dir_callback = function( path, level ) {
 
   let contextscript = ''
 
-  if ( contextscript = std.loadFile( path + '/' + pash.contextfile ) ) {
-    std.evalScript( contextscript ); std.out.puts( `  (pash.contextfile '${ pash.contextfile }' found, evaluated)` )
+  if ( contextscript = std.loadFile( path + '/' + pash.contextfilename ) ) {
+    std.evalScript( contextscript ); std.out.puts( `  (pash.contextfilename '${ pash.contextfilename }' found. evaluated)` )
   }
 
   std.out.puts( '\n' )
@@ -296,32 +279,31 @@ const recurseTree = function ( inpath, outpath, file_callback, dir_callback, lev
       	pash = savedPash; context = savedContext
       }
       else {
-        std.out.puts( '  '.repeat( level + 1 ) + item )
 
         if ( pash.skip ) { 
-          std.out.puts( `  (pash.skip is true, skipped)\n` )
+          std.out.puts( '  '.repeat( level + 1 ) + item + `  (pash.skip is true, skipped)\n` )
           continue itemloop
         } 
         
         for ( let pattern of pash.ignorefiles ) 
           if ( new RegExp( pattern ).test( item ) ) { 
-            std.out.puts( `  (pash.ignorefiles[ '${ pattern }' ] matched, ignored)\n` )
+            std.out.puts( '  '.repeat( level + 1 ) + item + `  (pash.ignorefiles[ '${ pattern }' ] matched, ignored)\n` )
             continue itemloop 
           }
 
-        for ( let pattern of pash.copy ) 
+        for ( let pattern of pash.copyextensions ) 
           if ( new RegExp( pattern ).test( item ) ) {
 			copyFile( inpath + '/' + item, outpath + '/' + item )
-            std.out.puts( `  (pash.copy[ '${ pattern }' ] matched, copied)\n` )
+            std.out.puts( '  '.repeat( level + 1 ) + item + `  (pash.copyextensions[ '${ pattern }' ] matched, copied)\n` )
             continue itemloop
           }
 
         let fileSavedPash = { ...pash }; let fileSavedContext = { ...context }
+
+		std.out.puts( '  '.repeat( level + 1 ) + item + '\n' ); std.out.flush()
         file_callback( inpath + '/' + item, outpath + '/' + item )
         pash = fileSavedPash; context = fileSavedContext
-        
-        std.out.puts( '\n' )
-        
+                
       	result.push( { n: item } )
       }
     }
@@ -331,41 +313,13 @@ const recurseTree = function ( inpath, outpath, file_callback, dir_callback, lev
 }
 
 
-//console.log( scriptArgs )
-
-
-/*
-if ( scriptArgs[0].endsWith( 'templet.mjs' ) ) {
-  let source
-
-  if ( scriptArgs.length < 2 ) {
-    std.err.puts( `
-Usage: 
-
-   qjs --std ${ scriptArgs[ 0 ] } [source] (--intermediate)
-` )
-    std.exit( 1 )
-  }
-  else {
-    source = scriptArgs[ 1 ]
-  }
-
-  if ( scriptArgs.length > 2 && scriptArgs[2] == '--intermediate' ) {
-    std.out.puts( templet( source ) )
-  }
-  else {
-    evalTemplet( source )
-  }
-}
-*/
-
-let inpath, outpath
+  let inpath, outpath
 
   if ( scriptArgs.length < 2 ) {
 	std.err.puts( `
 Usage: 
 
-  ./pash [source directory] [output directory] (temporary directory)
+  ./pash [source directory] [output directory]
 ` )
 	std.exit( 1 )
   }
@@ -379,11 +333,6 @@ Usage:
     let tree = recurseTree( inpath, outpath, file_callback, dir_callback ) 
   }
 
-//}
-//else {
-
-  //print( `Unknown name 'scriptArgs[ 0 ]', try templet.mjs or pash.mjs` )	
-//}
 
 }
 catch( ex ) {
