@@ -17,7 +17,6 @@ globalThis.context = {
 }
 
 
-
 pash.intermediateTemplet = function( string ) {
 
   let script = ''
@@ -35,7 +34,7 @@ pash.intermediateTemplet = function( string ) {
     
   }
   catch( ex ) {
-  	std.err.puts( `${ex}\n` ); if ( ex.stack ) std.err.puts( ex.stack )
+  	std.err.puts( `× ${ex}\n` ); if ( ex.stack ) std.err.puts( ex.stack )
   }
   
   return script
@@ -59,43 +58,16 @@ pash.templet = function ( filename ) {
 
     script = pash.intermediateTemplet( string )
 
+    //std.err.puts( script )
+
   }
   catch( ex ) {
-  	std.err.puts( `${ex}\n` ); if ( ex.stack ) std.err.puts( ex.stack )
+  	std.err.puts( `× ${ex}\n` ); if ( ex.stack ) std.err.puts( ex.stack )
   }
   
   return script
 	
 }
-
-
-/*
-const include = function ( filename ) {
-
-  try {
-
-    let script = templet( pash.inpath + '/' + filename )
-	
-	let previous_output = pash.output
-	let included = ''
-    pash.output = function( value ) { included += value + '\n' }
-
-    std.evalScript( script, { backtrace_barrier: false } )
-
-    pash.output = previous_output
-
-    if ( included.endsWith( '\n' ) )
-	  included = included.slice( 0, -1 )
-
-    return included
-
-  }
-  catch( ex ) {
-  	std.err.puts( `${ ex } (${ filename })\n` ); std.err.puts( ex.stack )
-  }	
-}
-pash.include = include
-*/
 
 
 pash.evalTemplet = function ( filename ) {
@@ -108,14 +80,26 @@ pash.evalTemplet = function ( filename ) {
 
   }
   catch( ex ) {
-  	std.err.puts( `${ ex } (${ filename })\n` ); std.err.puts( ex.stack )
+  	std.err.puts( `× ${ ex } (${ filename })\n` ); std.err.puts( ex.stack )
   }	
 }
 
 
 pash.include = function( filename ) {
+
+  let included_content = ''
+
+  let previous_output_function = pash.output
+
+  // override output function temporarily
+  pash.output = function( value ) { included_content += value + '\n' }
   pash.evalTemplet( pash.inpath + '/' + filename )
-  return ''	
+  
+  pash.output = previous_output_function
+
+  if ( included_content.endsWith( '\n' ) ) included_content = included_content.slice( 0, -1 )
+  
+  return included_content
 }
 
 
@@ -208,7 +192,7 @@ const reference_style_images_to_files = function( inpath, outpath, content ) {
 	
   }	
   catch( ex ) {
-  	std.err.puts( `${ ex } (${ inpath })\n` ); std.err.puts( ex.stack )  	
+  	std.err.puts( `× ${ ex } (${ inpath })\n` ); std.err.puts( ex.stack )  	
   }
 }
 
@@ -247,13 +231,13 @@ const file_callback = function( inpath, outpath ) {
 
   }
   catch( ex ) {
-  	std.err.puts( `${ ex } (${ inpath })\n` ); std.err.puts( ex.stack )
+  	std.err.puts( `× ${ ex } (${ inpath })\n` ); std.err.puts( ex.stack )
   }	
 }
 
 
 
-const recurseTree = function ( inpath, outpath, file_callback, dir_callback, level = 0 ) {
+const recurseTree = function ( inpath, outpath, file_callback, dir_callback, level = 1 ) {
   let result = []
   
   let directoryname = inpath.split( '/' ).at( -1 )
@@ -337,5 +321,5 @@ Usage:
 
 }
 catch( ex ) {
-  print( `${ex}\n` ); if ( ex.stack ) std.err.puts( ex.stack )
+  print( `× ${ex}\n` ); if ( ex.stack ) std.err.puts( ex.stack )
 }
