@@ -305,6 +305,7 @@ const recurseTree = function ( inpath, outpath, file_callback, dir_callback, lev
 Usage: 
 
   ./pash [source directory] [output directory]
+  
 ` )
 	std.exit( 1 )
   }
@@ -315,7 +316,7 @@ Usage:
     pash.inpath = inpath
     pash.outpath = outpath
     
-    let tree = recurseTree( inpath, outpath, file_callback, dir_callback ) 
+    let tree = recurseTree( inpath, outpath, file_callback, dir_callback )
   }
 
 
