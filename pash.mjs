@@ -5,11 +5,12 @@ const { Base64 } = await import( './chromium-base64.js' )
 
 globalThis.pash = { 
   contextfilename: '_context.mjs',
-  copyextensions: [ '\.gif$', '\.ico$', '\.js$', '\.jpg$', '\.mjs$', '\.png$', '\.ttf$', '\.woff2$' ], 
+  copyextensions: [ '\.gif$', '\.ico$', '\.js$', '\.jpg$', '\.mjs$', '\.png$', '\.ttf$', '\.woff2$' ],
   ignoredirs: [ '^[._]' ],
   ignorefiles: [ '^[._]' ], 
   output( string ) { print( string ) },  // override in file_callback
   skip: false,  // while this is true files are not processed at all
+  templet: true,  // while this is true files are evaluated as templets
   version: '0.1',
 } 
 globalThis.context = { 
@@ -133,7 +134,7 @@ const dir_callback = function( path, level ) {
   let contextscript = ''
 
   if ( contextscript = std.loadFile( path + '/' + pash.contextfilename ) ) {
-    std.evalScript( contextscript ); std.out.puts( `  (pash.contextfilename '${ pash.contextfilename }' found. evaluated)` )
+    std.evalScript( contextscript ); std.out.puts( `  (pash.contextfilename '${ pash.contextfilename }' found, evaluated)` )
   }
 
   std.out.puts( '\n' )
@@ -147,7 +148,8 @@ const reference_style_images_to_files = function( inpath, outpath, content ) {
 	let modified_lines = []
 
 	// assume outpath ends in '.html'
-    let images_outpath_root = outpath.slice( 0, -5 ) + '_image'
+	let images_outpath_root = outpath.slice( 0, outpath.lastIndexOf( '/' ) ) + outpath.slice( outpath.lastIndexOf( '/' ) ).replace( ' ', '_' ).slice( 0, -5 ) + '_image'
+
  	let images = []
 
     const regex = /^\[image(\d+)\]: <data:image\/(.*);base64,(.*)>/
@@ -205,7 +207,10 @@ const file_callback = function( inpath, outpath ) {
 	// string output for eval functions
     pash.output = function( value ) { content += value + '\n' }
 
-    pash.evalTemplet( inpath )
+    if ( pash.templet )
+    	pash.evalTemplet( inpath )
+    else
+    	content = std.loadFile( inpath )
 
     if ( inpath.endsWith( '.md' ) ) {
       outpath = outpath.slice( 0, -3 ) + '.html'
@@ -285,7 +290,11 @@ const recurseTree = function ( inpath, outpath, file_callback, dir_callback, lev
 
         let fileSavedPash = { ...pash }; let fileSavedContext = { ...context }
 
-		std.out.puts( '  '.repeat( level + 1 ) + item + '\n' ); std.out.flush()
+		std.out.puts( '  '.repeat( level + 1 ) + item )
+		if ( pash.templet == false ) 
+		  std.out.puts( '  (pash.templet is false, verbatim content)' )
+		std.out.puts( '\n' ); std.out.flush()
+
         file_callback( inpath + '/' + item, outpath + '/' + item )
         pash = fileSavedPash; context = fileSavedContext
                 
@@ -311,6 +320,9 @@ Usage:
   }
   else {
 	inpath = scriptArgs[ 0 ]; outpath = scriptArgs[ 1 ]
+	if ( inpath.endsWith( '/' ) ) inpath = inpath.slice( 0, -1 )
+	if ( outpath.endsWith( '/' ) ) outpath = outpath.slice( 0, -1 )
+
 	std.out.puts( `${ inpath } -> ${ outpath }\n` )
 
     pash.inpath = inpath
