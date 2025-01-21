@@ -1,5 +1,6 @@
 chmod
 curl
+make
 pash
 unzip
 zip
