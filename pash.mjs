@@ -148,7 +148,7 @@ const reference_style_images_to_files = function( inpath, outpath, content ) {
 	let modified_lines = []
 
 	// assume outpath ends in '.html'
-	let images_outpath_root = outpath.slice( 0, outpath.lastIndexOf( '/' ) ) + outpath.slice( outpath.lastIndexOf( '/' ) ).replace( ' ', '_' ).slice( 0, -5 ) + '_image'
+	let images_outpath_root = outpath.slice( 0, outpath.lastIndexOf( '/' ) ) + outpath.slice( outpath.lastIndexOf( '/' ) ).replaceAll( ' ', '_' ).slice( 0, -5 ) + '_image'
 
  	let images = []
 
