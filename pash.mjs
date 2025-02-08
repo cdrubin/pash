@@ -11,6 +11,8 @@ globalThis.pash = {
   output( string ) { print( string ) },  // override in file_callback
   skip: false,  // while this is true files are not processed at all
   templet: true,  // while this is true files are evaluated as templets
+  intermediatedir: '/tmp/pash/intermediate',
+  markdowndir: '/tmp/pash/markdown',
   version: '0.1',
 } 
 globalThis.context = { 
@@ -18,7 +20,7 @@ globalThis.context = {
 }
 
 
-pash.intermediateTemplet = function( string ) {
+function intermediateTemplet( string ) {
 
   let script = ''
 
@@ -41,12 +43,16 @@ pash.intermediateTemplet = function( string ) {
   return script
   
 }
+pash.intermediateTemplet = intermediateTemplet
 
 
-pash.templet = function ( filename ) {
+function intermediateTempletFile( filename ) {
 
   let script = ''
+  let tmpfilename = pash.intermediatedir + '/' + Math.random().toString().slice( 2 ) + '.mjs'
 
+  //std.err.puts( `tmpfilename: ${tmpfilename}` )
+  
   try {
   
     let file = std.open( filename, 'r' )
@@ -59,42 +65,74 @@ pash.templet = function ( filename ) {
 
     script = pash.intermediateTemplet( string )
 
+	// write intermediate file to tmpdir
+	//let tmpfilename = pash.tmpdir + '/' + Math.random + '.mjs'
+    let tmpfile = std.open( tmpfilename, 'w' )
+    tmpfile.puts( script )
+	tmpfile.close()
     //std.err.puts( script )
 
   }
   catch( ex ) {
   	std.err.puts( `× ${ex}\n` ); if ( ex.stack ) std.err.puts( ex.stack )
   }
-  
-  return script
+
+  //return script
+  return tmpfilename
 	
 }
+pash.intermediateTempletFile = intermediateTempletFile
 
 
-pash.evalTemplet = function ( filename ) {
+function evalTemplet( filename ) {
 
   try {
 
-    let script = pash.templet( filename )
-
-    std.evalScript( script, { backtrace_barrier: false } )
+    let script_filename = pash.intermediateTempletFile( filename )
+    std.loadScript( script_filename )
+    //std.out.puts( script )
+    //std.evalScript( script, { backtrace_barrier: false } )
 
   }
   catch( ex ) {
   	std.err.puts( `× ${ ex } (${ filename })\n` ); std.err.puts( ex.stack )
   }	
 }
+pash.evalTemplet = evalTemplet
 
 
-pash.include = function( filename ) {
+function includeVerbatim( filename ) {
 
   let included_content = ''
 
   let previous_output_function = pash.output
 
+  included_content = std.loadFile( inpath + '/' + filename )
+
+  if ( included_content.endsWith( '\n' ) ) included_content = included_content.slice( 0, -1 )
+  
+  return included_content
+}
+pash.includeVerbatim = includeVerbatim
+
+
+function includeTemplet( filename ) {
+
+  //std.err.puts( '1' )
+  let included_content = ''
+
+  let previous_output_function = pash.output
+  //std.err.puts( ')))' )
+  //std.err.puts( pash.output )
+
   // override output function temporarily
   pash.output = function( value ) { included_content += value + '\n' }
+  //std.err.puts( '(((' )
+  //std.err.puts( pash.output )
+
+  //std.err.puts( '2' )
   pash.evalTemplet( pash.inpath + '/' + filename )
+  //std.err.puts( '3' )
   
   pash.output = previous_output_function
 
@@ -102,9 +140,44 @@ pash.include = function( filename ) {
   
   return included_content
 }
+pash.includeTemplet = includeTemplet
 
 
-pash.copyFile = function( inpath, outpath ) {
+function isDirectory( path ) {
+  //print( `isDirectory: ${ path }` )
+  let stat = os.stat( path )[0]
+  //print( JSON.stringify( stat ) )
+  if ( stat )
+    return stat.mode & os.S_IFMT & os.S_IFDIR
+  else
+  	return false   
+}
+pash.isDirectory = isDirectory
+
+
+function recursiveMkdir( path, mode = 0o777 ) {
+  try {
+
+	//print( `recur: ${path}` )
+    let parts = path.split( '/' )
+    //print( `parts length: ${ parts.length}` )
+	for ( let i = 2; i < parts.length + 1; ++i ) {
+	  let subpath = parts.slice( 0, i ).join( '/' )
+	  //print( `subpath: ${subpath}`)
+	  if ( !isDirectory( subpath ) ) {
+	  	os.mkdir( subpath, mode )
+	  }
+	}
+  	
+  }
+  catch ( ex ) {
+    print( ex ); print( ex.stack )
+  }
+}
+pash.recursiveMkdir = recursiveMkdir
+
+
+function copyFile( inpath, outpath ) {
 
   try {
 
@@ -126,6 +199,7 @@ pash.copyFile = function( inpath, outpath ) {
     print( ex ); print( ex.stack )
   }
 }
+pash.copyFile = copyFile
 
 
 const dir_callback = function( path, level ) {
@@ -216,6 +290,12 @@ const file_callback = function( inpath, outpath ) {
       outpath = outpath.slice( 0, -3 ) + '.html'
       
       content = reference_style_images_to_files( inpath, outpath, content )
+
+	  let tmpfilename = pash.markdowndir + '/' + Math.random().toString().slice( 2 ) + '.md'
+      let tmpfile = std.open( tmpfilename, 'w' )
+      tmpfile.puts( content )
+	  tmpfile.close()
+	  
       pash.content = marked.parse( content )
       
     }  
@@ -244,6 +324,8 @@ const file_callback = function( inpath, outpath ) {
 
 const recurseTree = function ( inpath, outpath, file_callback, dir_callback, level = 1 ) {
   let result = []
+
+  pash.root = '../'.repeat( level - 1 )
   
   let directoryname = inpath.split( '/' ).at( -1 )
   std.out.puts( '  '.repeat( level ) + directoryname + '/' )
@@ -322,6 +404,14 @@ Usage:
 	inpath = scriptArgs[ 0 ]; outpath = scriptArgs[ 1 ]
 	if ( inpath.endsWith( '/' ) ) inpath = inpath.slice( 0, -1 )
 	if ( outpath.endsWith( '/' ) ) outpath = outpath.slice( 0, -1 )
+
+	//os.mkdir( pash.tmpdir )
+	//print( 0 )
+	recursiveMkdir( pash.intermediatedir )
+   // print( 1 )
+	recursiveMkdir( pash.markdowndir )
+	//print( 2 )
+	//exit
 
 	std.out.puts( `${ inpath } -> ${ outpath }\n` )
 
