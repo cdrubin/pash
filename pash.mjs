@@ -1,19 +1,31 @@
 try {
 
 const marked = await import( './marked.esm.js' )
+const markedHighlight = await import( './marked-highlight.esm.js' )
+const markedKatexExtension = await import( './marked-katex-extension.esm.js' )
 const { Base64 } = await import( './chromium-base64.js' )
 
-globalThis.pash = { 
+globalThis.pash = {
+  // transformation settings
   contextfilename: '_context.mjs',
   copyextensions: [ '\.gif$', '\.ico$', '\.js$', '\.jpg$', '\.mjs$', '\.png$', '\.ttf$', '\.woff2$' ],
   ignoredirs: [ '^[._]' ],
-  ignorefiles: [ '^[._]' ], 
+  ignorefiles: [ '^[._\[]' ], 
   output( string ) { print( string ) },  // override in file_callback
   skip: false,  // while this is true files are not processed at all
   templet: true,  // while this is true files are evaluated as templets
+
+  // generation constants
+  ansi: { bold: '\x1b[1m', dim: '\x1b[2m', eol: '\x1b[1000C', italics: '\x1b[3m', reset: '\x1b[0m', reverse: '\x1b[7m', underline:'\x1b[4m' },
   intermediatedir: '/tmp/pash/intermediate',
   markdowndir: '/tmp/pash/markdown',
+  stacktrace: 'brief',  // false, 'brief', 'full'
   version: '0.1',
+
+  // available values
+  filename: 'the name of the current file being processed',
+  path: 'the path of the current file being processed',
+  root: 'a relative path to the base of the output directory'  
 } 
 globalThis.context = { 
   layout: null
@@ -86,16 +98,48 @@ pash.intermediateTempletFile = intermediateTempletFile
 
 function evalTemplet( filename ) {
 
+  let loaded_content = ''
+  let script_filename = ''
   try {
 
-    let script_filename = pash.intermediateTempletFile( filename )
+    script_filename = pash.intermediateTempletFile( filename )
     std.loadScript( script_filename )
+
+    //loaded_content = std.loadFile( script_filename )
+    //std.evalScript( loaded_content )
+
     //std.out.puts( script )
     //std.evalScript( script, { backtrace_barrier: false } )
 
   }
-  catch( ex ) {
-  	std.err.puts( `× ${ ex } (${ filename })\n` ); std.err.puts( ex.stack )
+  catch( e ) {
+
+    std.err.puts( formatError( e, { filename: filename } ) )
+  
+/*    let stack = ex.stack.split( '\n' ) 
+    let top_stack_line = stack[0]
+    //let loaded_content_lines = loaded_content.split( '\n' )
+    let line_number = top_stack_line.slice( top_stack_line.lastIndexOf( ':' ) + 1 ).replace( ')', '' ) //ex.stack.slice( 0, 10 )
+    let original_line = getLine( filename, line_number ) //std.loadFile()
+    let intermediate_line = getLine( script_filename, line_number )
+    //loaded_content_lines[ line_number - 1 ]
+    if ( os.isatty( std.err ) ) {
+      std.err.puts( `${pash.ansi.bold}` )
+    }
+  	std.err.puts( `× ${ ex } (${ filename }:${ line_number })\n` )
+	if ( os.isatty( std.err ) )
+      std.err.puts( `  ${ line_number }: ${pash.ansi.dim}${pash.ansi.reverse}${ original_line }${pash.ansi.reset}${pash.ansi.bold}\n` )
+    else
+  	  std.err.puts( `  ${ line_number }: ${ original_line }\n` )
+    if ( pash.stacktrace ) std.err.puts( ex.stack )
+    std.err.puts( '\n' )
+    if ( os.isatty( std.err ) ) {
+      std.err.puts( `${pash.ansi.reset}` )
+    }
+    
+    //std.err.puts( `  ${ top_stack_line.slice( 14 ) } \n\n` )
+  	//std.err.puts( `  ${ script_filename }:${line_number}: ${intermediate_line}\n` )
+  	*/
   }	
 }
 pash.evalTemplet = evalTemplet
@@ -131,6 +175,10 @@ function includeTemplet( filename ) {
   //std.err.puts( pash.output )
 
   //std.err.puts( '2' )
+
+  //let loaded_content = std.loadFile( inpath + '/' + filename )
+  //std.evalScript( loaded_content )
+
   pash.evalTemplet( pash.inpath + '/' + filename )
   //std.err.puts( '3' )
   
@@ -143,6 +191,73 @@ function includeTemplet( filename ) {
 pash.includeTemplet = includeTemplet
 
 
+function formatError( error, details ) {
+
+  //let name = ex.name
+  //let message = error.message
+  let stack = error.stack.split( '\n' )
+
+  let result = ''
+
+  //std.err.puts( error.stack )
+
+  //std.err.puts( `error.name: ${error.name}\n` )
+  //std.err.puts( `error.message: ${error.message}\n` )
+  //std.err.puts( `error.fileName: ${error.fileName}\n` )
+  //std.err.puts( `error.lineNumber: ${error.lineNumber}\n` )
+
+  //std.err.puts( JSON.encode( error ) )//`%%%% ${ error.message }` )
+
+//  let filename = error.cause.slice( error.cause.indexOf( '(' ), -1 )
+
+  let top_line = stack[0]
+
+  let line_number = top_line.slice( top_line.lastIndexOf( ':' ) + 1 ).replace( ')', '' )
+  
+  let original_line = getLine( details.filename, line_number ) //std.loadFile()
+
+  let brief_lines = []
+
+  for ( let line of stack ) {
+    if ( !line.includes( 'native' ) && !line.includes( '/zip' ) ) {
+      brief_lines.push( line.slice( 2 ) )
+      //brief_lines.push( line.slice( line.indexOf( '(' ) + 1, -1 ) )
+    }
+  }
+
+  if ( os.isatty( std.err ) ) {
+    //result += `${pash.ansi.bold}`
+    result += `× ${pash.ansi.bold}${pash.ansi.underline}${ error.name }${pash.ansi.reset} (${pash.ansi.bold}${ details.filename }${pash.ansi.reset}:${ line_number })\n`
+  }
+  else {
+    result += `× ${ error.name } (${ details.filename }:${ line_number })\n`
+  }
+  
+  //result += `× ${ error.name } (${ details.filename }:${ line_number })\n`
+
+  if ( os.isatty( std.err ) )
+    result += `  ${ line_number }: ${pash.ansi.dim}${pash.ansi.reverse}${ original_line }${pash.ansi.reset}\n`
+  else
+  	result += `  ${ line_number }: ${ original_line }\n`
+
+  if ( pash.stacktrace ) {  	
+    if ( pash.stacktrace == 'brief' ) 
+      result += brief_lines.join( '\n' )
+    else
+      result += error.stack
+  }
+
+  if ( os.isatty( std.err ) ) {
+    result += `${pash.ansi.reset}`
+  }
+
+  result += '\n'
+  
+  return result
+
+}
+
+
 function isDirectory( path ) {
   //print( `isDirectory: ${ path }` )
   let stat = os.stat( path )[0]
@@ -153,6 +268,32 @@ function isDirectory( path ) {
   	return false   
 }
 pash.isDirectory = isDirectory
+
+
+function getLine( path, number = 0 ) {
+  //std.err.puts( `path: ${path}` )
+  let file = null
+  try {
+    let file = std.open( path, 'r' )
+    let line_number = 0
+    let line = ''
+    //std.err.puts( `number: ${number}, line_number: ${line_number}` )
+    while ( line_number < number ) {
+      line = file.getline()
+      //std.err.puts( `${line_number}: ${line}` )
+      line_number += 1
+    }
+    
+    return line
+  }
+  catch ( ex ) {
+    print( ex ); print( ex.stack )
+  }
+  finally {
+  	if ( file ) file.close()
+  }
+}
+pash.getLine = getLine
 
 
 function recursiveMkdir( path, mode = 0o777 ) {
@@ -295,8 +436,22 @@ const file_callback = function( inpath, outpath ) {
       let tmpfile = std.open( tmpfilename, 'w' )
       tmpfile.puts( content )
 	  tmpfile.close()
+
+
+      const marked = new Marked(
+  markedHighlight({
+	emptyLangClass: 'hljs',
+    langPrefix: 'hljs language-',
+    highlight(code, lang, info) {
+      const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+      return hljs.highlight(code, { language }).value;
+    }
+  })
+);
 	  
       pash.content = marked.parse( content )
+
+
       
     }  
     else { 
@@ -377,7 +532,11 @@ const recurseTree = function ( inpath, outpath, file_callback, dir_callback, lev
 		  std.out.puts( '  (pash.templet is false, verbatim content)' )
 		std.out.puts( '\n' ); std.out.flush()
 
+		pash.filename = item//'pash filename' // = 'goodie' //#### pass the current filename so it can be placed in title if desired
+        pash.path = inpath
+        
         file_callback( inpath + '/' + item, outpath + '/' + item )
+
         pash = fileSavedPash; context = fileSavedContext
                 
       	result.push( { n: item } )
@@ -388,6 +547,13 @@ const recurseTree = function ( inpath, outpath, file_callback, dir_callback, lev
   return result
 }
 
+
+  //let line = getLine( 'README.md', 1 )
+  //std.err.puts( line )
+  //std.exit(10)
+
+  //std.err.puts( `${pash.ansi.italics}low${pash.ansi.bold}video${pash.ansi.reset}` )
+  //std.exit( 12 )
 
   let inpath, outpath
 
