@@ -4,11 +4,13 @@ COSMOS_VERSION=3.2.4
 .PHONY: build clean
 
 build: pash curl make unzip zip
-	zip pash .init.mjs pash.mjs marked.esm.js chromium-base64.js curl make unzip zip
+	zip pash .init.mjs pash.mjs marked.esm.js shiki.esm.js marked-shiki.esm.js katex.esm.js marked-katex-extension.esm.js chromium-base64.js curl make unzip zip
+#	zip pash .init.mjs pash.mjs marked.esm.js highlight.esm.js hljs.esm.js marked-highlight.esm.js katex.esm.js marked-katex-extension.esm.js chromium-base64.js curl make unzip zip
 
 build-alone: pash
-	zip pash .init.mjs pash.mjs marked.esm.js chromium-base64.js
-
+	zip pash .init.mjs pash.mjs marked.esm.js shiki.esm.js marked-shiki.esm.js katex.esm.js marked-katex-extension.esm.js chromium-base64.js
+#	zip pash .init.mjs pash.mjs marked.esm.js highlight.esm.js marked-highlight.esm.js katex.esm.js marked-katex-extension.esm.js chromium-base64.js
+	
 #chmod:
 #	curl -L https://cosmo.zip/pub/cosmos/bin/chmod.ape -o chmod && chmod +x chmod
 

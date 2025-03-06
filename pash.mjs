@@ -1,8 +1,9 @@
 try {
 
-const marked = await import( './marked.esm.js' )
-const markedHighlight = await import( './marked-highlight.esm.js' )
-const markedKatexExtension = await import( './marked-katex-extension.esm.js' )
+const { Marked } = await import( './marked.esm.js' )
+const { markedHighlight } = await import( './marked-highlight.esm.js' )
+const hljs = await import( './highlight.esm.js' )
+
 const { Base64 } = await import( './chromium-base64.js' )
 
 globalThis.pash = {
@@ -437,20 +438,58 @@ const file_callback = function( inpath, outpath ) {
       tmpfile.puts( content )
 	  tmpfile.close()
 
-
-      const marked = new Marked(
+/*
+marked.use(
   markedHighlight({
-	emptyLangClass: 'hljs',
-    langPrefix: 'hljs language-',
-    highlight(code, lang, info) {
-      const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+    langPrefix: "hljs language-", // Highlight.js class prefix
+    highlight(code, lang) {
+      const language = hljs.getLanguage(lang) ? lang : "plaintext";
       return hljs.highlight(code, { language }).value;
-    }
+    },
   })
 );
+*/
+/*
+      const marked = new Marked()
+      //marked.setOptions(marked.getDefaults())
+      marked.setOptions({
+        emptyLangClass: 'hljs',
+        langPrefix: 'hljs language-',
+        highlight: function(code, language) {
+          const validLanguage = hljs.getLanguage(language) ? language : 'plaintext';
+          return hljs.highlight(code, { language: validLanguage }).value;
+        }
+      });
+      
+      markedHighlight( {
+	      emptyLangClass: 'hljs',
+          langPrefix: 'hljs language-',
+          highlight(code, lang, info) {
+            const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+            return hljs.highlight(code, { language }).value;
+          }
+        } )
+      )*/
+
+	  //marked.use( markedKatex( { throwOnError: true } ) )
+
+
+      // preserve code block backticks
+      content = content.replaceAll( '\\`\\`\\`', '```' )
+
+      const marked = new Marked(
+        markedHighlight({
+	      emptyLangClass: 'hljs',
+          langPrefix: 'hljs language-',
+          highlight(code, lang, info) {
+            const language = hljs.default.getLanguage(lang) ? lang : 'plaintext';
+            return hljs.default.highlight(code, { language }).value;
+          }
+        })
+      );
 	  
       pash.content = marked.parse( content )
-
+	  //pash.content = marked( content )
 
       
     }  
